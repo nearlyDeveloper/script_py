@@ -59,7 +59,7 @@ def main(url_of_group):
         for i in range(1, 2):
             req = requests.get(url=f"https://catalog.onliner.by/sdapi/catalog.api/search/{ber}?group=1&page={i}")
             jso = json.loads(req.text)
-            for j in range(0, 30):
+            for j in range(29, 30):
                 from_selenium = jso['products'][j]['html_url']
                 name = jso['products'][j]['full_name']
                 html = jso['products'][j]['html_url'].split('/')[-1]
@@ -69,24 +69,40 @@ def main(url_of_group):
                 driver.get(from_selenium + "/prices")
                 # print(quantity)
                 try:
-                        button = driver.find_element(By.CLASS_NAME,"button-style_specific")
-                        button.click()
+                    button = driver.find_element(By.CLASS_NAME,"button-style_specific")
+                    button.click()
                 except NoSuchElementException:
                     pass
                 sleep(1.7)
                 a = driver.find_elements(By.CLASS_NAME,"offers-list__description_nowrap")
-                price = driver.find_elements(By.CLASS_NAME, "offers-description__price")
-                price_list = []
-                for price in price:
-                    try:
-                            price_value = price.text.strip().replace(' р.','').replace(',', '.')
-                            price_list.append(price_value)                        
-                    except ValueError:
-                        pass  
-                if price_list:
-                    min_price = min(price_list)
+                price_element = driver.find_element(By.CLASS_NAME, "offers-description__price")
+                if driver.find_elements(By.CLASS_NAME, "offers-description__price_secondary"):
+                    secondary_price_element = driver.find_element(By.CLASS_NAME, "offers-description__price_secondary")
+                    price_list = [secondary_price_element]
                 else:
-                    min_price = None  # или другое значение по умолчанию 
+                    price_list = [price_element]
+                
+                min_price = None
+                saved_price = 'None'
+                for price in price_list:
+                        try:
+                            price_value = price.get_attribute("textContent").strip().replace(' р.','').replace(',', '.')
+                            if min_price is None or float(price_value) < float(min_price):
+                                min_price = price_value
+                        except ValueError:
+                                pass
+               # try:
+               #     delivery_price = driver.find_element(By.CLASS_NAME, "offers-list__item")
+               #     delivery_price_link = delivery_price.find_element(By.TAG_NAME, "a")
+                #    if delivery_price_link.get_attribute("href") == "https://5410.shop.onliner.by/":
+                #        if "под заказ" in delivery_price.text:
+                #            price_element = delivery_price.find_element(By.CLASS_NAME, "offers-list__description offers-list__description_alter-other")
+                #            price_value = price_element.get_attribute("textContent").strip().replace(' р.','').replace(',', '.')
+                #            if saved_price is None or float(price_value) < float(price_value):
+                #                saved_price = price_value
+                                
+               # except NoSuchElementException:
+               #     pass 
                 for o in a:
                     # print(o.text)
                     if len(o.text.split()) == 4 and o.text.split()[0] == '—':
@@ -123,10 +139,10 @@ def main(url_of_group):
                     if len(s) == 1:
                         item = {
                             'name': name,
-                            'price': ''.join(prices),
-                            'delivery': "Доставка" + ' '.join(s) + " день",
+                            'price': min_price,
+                            'delivery': "Доставка" + ' '.join(s) + " д.",
                             'price_King': dr,
-                            'delivery_King': "Доставка " + hj + " день",
+                            'delivery_King': "Доставка " + hj + " д.",
                             'name_shop': ', '.join(name_shop),
                             'url': from_selenium + "/prices",
                             'nal': na
@@ -136,10 +152,10 @@ def main(url_of_group):
                         if w == 1:
                             item = {
                                 'name': name,
-                                'price': min(prices),
-                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " день",
+                                'price': min_price,
+                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д.",
                                 'price_King': dr,
-                                'delivery_King': "Доставка " + hj + " день",
+                                'delivery_King': "Доставка " + hj + " д.",
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na
@@ -147,8 +163,8 @@ def main(url_of_group):
                         else:
                             item = {
                                 'name': name,
-                                'price': min(prices),
-                                'delivery': "Доставка" + str(s[prices.index(min(prices))]) + " день",
+                                'price': min_price,
+                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д.",
                                 'price_King': " ",
                                 'delivery_King': "Доставка",
                                 'name_shop': ', '.join(name_shop),
@@ -160,10 +176,10 @@ def main(url_of_group):
                         if w == 1:
                             item = {
                                 'name': name,
-                                'price': ''.join(prices),
+                                'price': min_price,
                                 'delivery': "Пока нет доставки по адресу и в пункты выдачи",
                                 'price_King': dr,
-                                'delivery_King': "Доставка " + hj + " день",
+                                'delivery_King': "Доставка " + hj + " д.",
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na
@@ -185,7 +201,7 @@ def main(url_of_group):
                                 'name': name,
                                 'price': min_price,
                                 'delivery': " ",
-                                'price_King': dr,
+                                'price_King': saved_price,
                                 'delivery_King': "Под заказ" + hj,
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
@@ -203,8 +219,8 @@ def main(url_of_group):
                     ws = workbook.add_worksheet()
                     bold = workbook.add_format({'bold': True})
 
-                    headers = ['Название товара', 'Минимальная Цена', "Минимальные сроки доставки среди тех, у кого минимальная цена", "Цена KingStyle", "Сроки доставки KingStyle",
-                               "Магазины срока доставки", "Наличие", "Ссылка"]
+                    headers = ['Название товара', 'Минимальная цена', "Мин. сроки доставки среди тех, у кого минимальная цена", "Цена KingStyle", "Сроки доставки KingStyle",
+                               "Магазины с мин. сроком доставки", "Наличие", "Ссылка"]
                     for col, h in enumerate(headers):
                         ws.write_string(0, col, h, cell_format=bold)
                     for row, item in enumerate(data, start=1):

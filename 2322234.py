@@ -11,7 +11,7 @@ from pprint import pprint
 
 
 
-PATH = r"C:/Program Files/Новая папка/positions.csv"
+PATH = r"C:/Users/Bartosh/Desktop/Main files/28.06/positions.csv"
 URL = 'https://b2bapi.onliner.by'
 URL_C = 'https://catalog.onliner.by'
 CLIENT_ID = 'b0e96d5f8cd989c3bee0'

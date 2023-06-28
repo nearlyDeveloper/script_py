@@ -76,8 +76,17 @@ def main(url_of_group):
                 sleep(1.7)
                 a = driver.find_elements(By.CLASS_NAME,"offers-list__description_nowrap")
                 price = driver.find_elements(By.CLASS_NAME, "offers-description__price")
-                price_list = [float(price.text.strip().replace(' р.','').replace(',', '.'))for price in price]
-                min_price = min(price_list)
+                price_list = []
+                for price in price:
+                    try:
+                            price_value = price.text.strip().replace(' р.','').replace(',', '.')
+                            price_list.append(price_value)                        
+                    except ValueError:
+                        pass  
+                if price_list:
+                    min_price = min(price_list)
+                else:
+                    min_price = None  # или другое значение по умолчанию 
                 for o in a:
                     # print(o.text)
                     if len(o.text.split()) == 4 and o.text.split()[0] == '—':
@@ -102,7 +111,7 @@ def main(url_of_group):
                             s = []
                         else:
                             del s[k]
-                print(s)
+                # print(s)
 
                 if w == 1:
                     na = "Есть в магазине KingStyle"
@@ -174,8 +183,8 @@ def main(url_of_group):
                     else:
                             item = {
                                 'name': name,
-                                'price': ' ' + min_price ,
-                                'delivery': "as ",
+                                'price': min_price,
+                                'delivery': " ",
                                 'price_King': dr,
                                 'delivery_King': "Под заказ" + hj,
                                 'name_shop': ', '.join(name_shop),

@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 import datetime
+import math
 from random import randrange
 from time import sleep
 from selenium import webdriver
@@ -8,6 +9,7 @@ from selenium.common.exceptions import NoSuchElementException
 import json
 import xlsxwriter
 import requests
+
 
 
 def main(url_of_group):
@@ -59,7 +61,7 @@ def main(url_of_group):
         for i in range(1, 2):
             req = requests.get(url=f"https://catalog.onliner.by/sdapi/catalog.api/search/{ber}?group=1&page={i}")
             jso = json.loads(req.text)
-            for j in range(29, 30):
+            for j in range(3, 5):
                 from_selenium = jso['products'][j]['html_url']
                 name = jso['products'][j]['full_name']
                 html = jso['products'][j]['html_url'].split('/')[-1]
@@ -80,10 +82,8 @@ def main(url_of_group):
                     secondary_price_element = driver.find_element(By.CLASS_NAME, "offers-description__price_secondary")
                     price_list = [secondary_price_element]
                 else:
-                    price_list = [price_element]
-                
-                min_price = None
-                saved_price = 'None'
+                    price_list = [price_element]             
+                min_price = None              
                 for price in price_list:
                         try:
                             price_value = price.get_attribute("textContent").strip().replace(' р.','').replace(',', '.')
@@ -91,18 +91,29 @@ def main(url_of_group):
                                 min_price = price_value
                         except ValueError:
                                 pass
-               # try:
-               #     delivery_price = driver.find_element(By.CLASS_NAME, "offers-list__item")
-               #     delivery_price_link = delivery_price.find_element(By.TAG_NAME, "a")
-                #    if delivery_price_link.get_attribute("href") == "https://5410.shop.onliner.by/":
-                #        if "под заказ" in delivery_price.text:
-                #            price_element = delivery_price.find_element(By.CLASS_NAME, "offers-list__description offers-list__description_alter-other")
-                #            price_value = price_element.get_attribute("textContent").strip().replace(' р.','').replace(',', '.')
-                #            if saved_price is None or float(price_value) < float(price_value):
-                #                saved_price = price_value
-                                
-               # except NoSuchElementException:
-               #     pass 
+                
+                # try:
+                    # saved_price = math.inf 
+                    # delivery_price = driver.find_element(By.CLASS_NAME, "offers-list__item")
+                    # delivery_price_link = delivery_price.find_element(By.TAG_NAME, "a")
+                    # if delivery_price_link.get_attribute("href") == "https://5410.shop.onliner.by/":
+                        # if "под заказ" in delivery_price.text:
+                            # price_element = delivery_price.find_element(By.CLASS_NAME, "offers-list__description offers-list__description_alter-other")
+                            # price_value = price_element.get_attribute("textContent").strip().replace(' р.','').replace(',', '.')
+                            # if float(price_value) < saved_price:
+                                    # saved_price = price_value
+                # except NoSuchElementException:
+                   # pass
+                offers = driver.find_elements(By.CLASS_NAME,"offers-list__item")
+                # Перебираем каждое предложение
+                for offer in offers:
+                # Проверяем наличие ссылки и текста "под заказ"
+                    link = offer.find_element(By.CSS_SELECTOR,"a[href='https://5410.shop.onliner.by/']")
+                    text = offer.find_element(By.CLASS_NAME,"offers-list__description").text
+                    if link is not None and "под заказ" in text:
+                            saved_price = text
+                # print(saved_price)
+                # print(length) 
                 for o in a:
                     # print(o.text)
                     if len(o.text.split()) == 4 and o.text.split()[0] == '—':

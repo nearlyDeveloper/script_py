@@ -61,7 +61,7 @@ def main(url_of_group):
         for i in range(1, 2):
             req = requests.get(url=f"https://catalog.onliner.by/sdapi/catalog.api/search/{ber}?group=1&page={i}")
             jso = json.loads(req.text)
-            for j in range(3, 5):
+            for j in range(0, 30):
                 from_selenium = jso['products'][j]['html_url']
                 name = jso['products'][j]['full_name']
                 html = jso['products'][j]['html_url'].split('/')[-1]
@@ -91,28 +91,22 @@ def main(url_of_group):
                                 min_price = price_value
                         except ValueError:
                                 pass
-                
-                # try:
-                    # saved_price = math.inf 
-                    # delivery_price = driver.find_element(By.CLASS_NAME, "offers-list__item")
-                    # delivery_price_link = delivery_price.find_element(By.TAG_NAME, "a")
-                    # if delivery_price_link.get_attribute("href") == "https://5410.shop.onliner.by/":
-                        # if "под заказ" in delivery_price.text:
-                            # price_element = delivery_price.find_element(By.CLASS_NAME, "offers-list__description offers-list__description_alter-other")
-                            # price_value = price_element.get_attribute("textContent").strip().replace(' р.','').replace(',', '.')
-                            # if float(price_value) < saved_price:
-                                    # saved_price = price_value
-                # except NoSuchElementException:
-                   # pass
-                offers = driver.find_elements(By.CLASS_NAME,"offers-list__item")
-                # Перебираем каждое предложение
-                for offer in offers:
-                # Проверяем наличие ссылки и текста "под заказ"
-                    link = offer.find_element(By.CSS_SELECTOR,"a[href='https://5410.shop.onliner.by/']")
-                    text = offer.find_element(By.CLASS_NAME,"offers-list__description").text
-                    if link is not None and "под заказ" in text:
-                            saved_price = text
-                # print(saved_price)
+                        try:
+                            saved_price = None
+                            delivery_price_offers = driver.find_element(By.CLASS_NAME, "offers-list__item")
+                            delivery_price_shop = driver.find_element(By.CLASS_NAME, "offers-list__shop")
+                            delivery_price_link = delivery_price_shop.find_element(By.CSS_SELECTOR, "a")
+                            if "https://5410.shop.onliner.by/" in delivery_price_link.get_attribute("href"):
+                                if "под заказ" in delivery_price_offers.text:
+                                        price_element = delivery_price_offers.find_element(By.CLASS_NAME, "offers-list__description")
+                                        price_value = price_element.text.strip()
+                                        saved_price = price_value
+                        except ValueError:
+                                pass
+                        if saved_price is not None:
+                            print(saved_price)
+                        else: 
+                            saved_price = 'Нашего предложения нет'
                 # print(length) 
                 for o in a:
                     # print(o.text)
@@ -131,7 +125,9 @@ def main(url_of_group):
                     else:
                         dr = json_data['positions']['primary'][k]['position_price']['amount']
                         hj = s[k]
-                        # print(dr)
+                        data_type = type(dr)
+                        print(dr)
+                        print(data_type)
                         # print(hj)
                         w = 1
                         if len(s) < 2:
@@ -139,7 +135,9 @@ def main(url_of_group):
                         else:
                             del s[k]
                 # print(s)
+                        
 
+                        # Вывод значения и типа данных
                 if w == 1:
                     na = "Есть в магазине KingStyle"
                 else:

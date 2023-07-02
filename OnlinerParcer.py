@@ -1,14 +1,16 @@
 # -*- coding: utf8 -*-
 import datetime
+import math
 from random import randrange
 from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 import json
 import xlsxwriter
 import requests
-
 
 def main(url_of_group):
     tg = datetime.datetime.now()
@@ -16,37 +18,18 @@ def main(url_of_group):
     name_shop = []
     s = []
     data = []
-    if url_of_group == "https://catalog.onliner.by/office_chair":
-        ber = "office_chair"
-        rt = "Офисные_кресла_и_стулья"
-    else:
-        if url_of_group == "https://catalog.onliner.by/table":
-            ber = "table"
-            rt = "Письменные_и_компьютерные_столы"
-        else:
-            if url_of_group == "https://catalog.onliner.by/chair":
-                ber = "chair"
-                rt = "Стулья_для_кухни_и_бара"
-            else:
-                if url_of_group == "https://catalog.onliner.by/kidsdesk":
-                    ber = "kidsdesk"
-                    rt = "Детские_парты,_столы,_стулья"
-                else:
-                    if url_of_group == "https://catalog.onliner.by/gardenfurniture":
-                        ber = "gardenfurniture"
-                        rt = "Садовая_мебель"
-                    else:
-                        if url_of_group == "https://catalog.onliner.by/divan":
-                            ber = "divan"
-                            rt = "Диваны"
-                        else:
-                            if url_of_group == "https://catalog.onliner.by/interior_chair":
-                               ber = "interior_chair"
-                               rt = "Кресла"
-                            else:
-                                if url_of_group == "https://catalog.onliner.by/kitchen_table":
-                                   ber = "kitchen_table"
-                                   rt = "Кухонные столы и обеденные группы"
+    url_mappings = {
+        "https://catalog.onliner.by/office_chair": ("office_chair", "Офисные_кресла_и_стулья"),
+        "https://catalog.onliner.by/table": ("table", "Письменные_и_компьютерные_столы"),
+        "https://catalog.onliner.by/chair": ("chair", "Стулья_для_кухни_и_бара"),
+        "https://catalog.onliner.by/kidsdesk": ("kidsdesk", "Детские_парты,_столы,_стулья"),
+        "https://catalog.onliner.by/gardenfurniture": ("gardenfurniture", "Садовая_мебель"),
+        "https://catalog.onliner.by/divan": ("divan", "Диваны"),
+        "https://catalog.onliner.by/interior_chair": ("interior_chair", "Кресла"),
+        "https://catalog.onliner.by/kitchen_table": ("kitchen_table", "Кухонные столы и обеденные группы")
+    }
+
+    ber, rt = url_mappings.get(url_of_group, (None, None))
     w = 0
     dr = ""
     hj = ""
@@ -68,42 +51,70 @@ def main(url_of_group):
                 json_data = json.loads(r.text)
                 driver.get(from_selenium + "/prices")
                 # print(quantity)
-                try:
-                        button = driver.find_element(By.CLASS_NAME,"button-style_specific")
-                        button.click()
-                except NoSuchElementException:
-                    pass
-                sleep(1.7)
+                try: 
+                # Ждем, пока кнопка станет видимой
+                    button = WebDriverWait(driver, 1.7).until(EC.visibility_of_element_located((By.CLASS_NAME, "button-style_specific")))
+                    # Используйте метод execute_script для выполнения JavaScript кода и клика по кнопке
+                    driver.execute_script("arguments[0].click();", button)
+                except TimeoutException:
+                    pass 
                 a = driver.find_elements(By.CLASS_NAME,"offers-list__description_nowrap")
-                price = driver.find_elements(By.CLASS_NAME, "offers-description__price")
-                price_list = [float(price.text.strip().replace(' р.','').replace(',', '.'))for price in price]
-                min_price = min(price_list)
+                price_element = driver.find_element(By.CLASS_NAME, "offers-description__price")
+                if driver.find_elements(By.CLASS_NAME, "offers-description__price_secondary"):
+                    secondary_price_element = driver.find_element(By.CLASS_NAME, "offers-description__price_secondary")
+                    price_list = [secondary_price_element]
+                else:
+                    price_list = [price_element]             
+                min_price = None              
+                for price in price_list:
+                        try:
+                            price_value = price.get_attribute("textContent").strip().replace(' р.','').replace(',', '.')
+                            if min_price is None or float(price_value) < float(min_price):
+                                min_price = price_value
+                        except ValueError:
+                                pass
+                        try:
+                            saved_price = None
+                            delivery_price_offers = driver.find_element(By.CLASS_NAME, "offers-list__item")
+                            delivery_price_shop = driver.find_element(By.CLASS_NAME, "offers-list__shop")
+                            delivery_price_link = delivery_price_shop.find_element(By.CSS_SELECTOR, "a")
+                            if "https://5410.shop.onliner.by/" in delivery_price_link.get_attribute("href"):
+                                if "под заказ" in delivery_price_offers.text:
+                                        price_element = delivery_price_offers.find_element(By.CLASS_NAME, "offers-list__description")
+                                        price_value = price_element.text.strip()
+                                        saved_price = price_value
+                        except ValueError:
+                                pass
+                        if saved_price is not None:
+                            print(saved_price)
+                        else: 
+                            saved_price = 'Нашего предложения нет'
+                # print(length) 
                 for o in a:
                     # print(o.text)
                     if len(o.text.split()) == 4 and o.text.split()[0] == '—':
                         del o.text.split()[0]
                         del o.text.split()[1]
                         s.append(''.join(o.text.split()[2:3]).replace(',', ''))
-
                 #print(s)
                 for k in range(0, len(s)):
                     if not json_data["shops"][str(json_data["positions"]["primary"][k]["shop_id"])]["title"] == "KingStyle":
                         prices.append(json_data['positions']['primary'][k]['position_price']['amount'])
                         name_shop.append(
                             json_data["shops"][str(json_data["positions"]["primary"][k]["shop_id"])]["title"])
-
                     else:
                         dr = json_data['positions']['primary'][k]['position_price']['amount']
                         hj = s[k]
-                        # print(dr)
+                        data_type = type(dr)
+                        print(dr)
+                        print(data_type)
                         # print(hj)
                         w = 1
                         if len(s) < 2:
                             s = []
                         else:
                             del s[k]
-                print(s)
-
+                # print(s)
                 if w == 1:
                     na = "Есть в магазине KingStyle"
                 else:
@@ -114,23 +125,22 @@ def main(url_of_group):
                     if len(s) == 1:
                         item = {
                             'name': name,
-                            'price': ''.join(prices),
-                            'delivery': "Доставка" + ' '.join(s) + " день",
+                            'price': min_price,
+                            'delivery': "Доставка " + ' '.join(s) + " д.",
                             'price_King': dr,
-                            'delivery_King': "Доставка " + hj + " день",
+                            'delivery_King': "Доставка " + hj + " д.",
                             'name_shop': ', '.join(name_shop),
                             'url': from_selenium + "/prices",
                             'nal': na
                         }
-
                     else:
                         if w == 1:
                             item = {
                                 'name': name,
-                                'price': min(prices),
-                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " день",
+                                'price': min_price,
+                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д.",
                                 'price_King': dr,
-                                'delivery_King': "Доставка " + hj + " день",
+                                'delivery_King': "Доставка " + hj + " д.",
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na
@@ -138,10 +148,10 @@ def main(url_of_group):
                         else:
                             item = {
                                 'name': name,
-                                'price': min(prices),
-                                'delivery': "Доставка" + str(s[prices.index(min(prices))]) + " день",
+                                'price': min_price,
+                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д.",
                                 'price_King': " ",
-                                'delivery_King': "Доставка",
+                                'delivery_King': "Доставка ",
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na
@@ -151,10 +161,10 @@ def main(url_of_group):
                         if w == 1:
                             item = {
                                 'name': name,
-                                'price': ''.join(prices),
+                                'price': min_price,
                                 'delivery': "Пока нет доставки по адресу и в пункты выдачи",
                                 'price_King': dr,
-                                'delivery_King': "Доставка " + hj + " день",
+                                'delivery_King': "Доставка " + hj + " д.",
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na
@@ -170,14 +180,13 @@ def main(url_of_group):
                                 'url': from_selenium + "/prices",
                                 'nal': na
                             }
-
                     else:
                             item = {
                                 'name': name,
-                                'price': ' ' + min_price ,
-                                'delivery': "as ",
-                                'price_King': dr,
-                                'delivery_King': "Под заказ" + hj,
+                                'price': min_price,
+                                'delivery': " ",
+                                'price_King': saved_price,
+                                'delivery_King': "Под заказ " + hj,
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na
@@ -189,13 +198,11 @@ def main(url_of_group):
                 name_shop = []
                 dr = ''
                 hj = ''
-
                 with xlsxwriter.Workbook(f"{rt}.xlsx") as workbook:
                     ws = workbook.add_worksheet()
                     bold = workbook.add_format({'bold': True})
-
-                    headers = ['Название товара', 'Минимальная Цена', "Минимальные сроки доставки среди тех, у кого минимальная цена", "Цена KingStyle", "Сроки доставки KingStyle",
-                               "Магазины срока доставки", "Наличие", "Ссылка"]
+                    headers = ['Название товара', 'Минимальная цена', "Мин. сроки доставки среди тех, у кого минимальная цена", "Цена KingStyle", "Сроки доставки KingStyle",
+                               "Магазины с мин. сроком доставки", "Наличие", "Ссылка"]
                     for col, h in enumerate(headers):
                         ws.write_string(0, col, h, cell_format=bold)
                     for row, item in enumerate(data, start=1):
@@ -208,9 +215,8 @@ def main(url_of_group):
                         ws.write_string(row, 6, item["nal"])
                         ws.write_string(row, 7, item['url'])
 
-            print(f"Обработана {i}/{4}")
+            print(f"Обработана {i}/{3}")
         print(datetime.datetime.now() - tg)
-
 
 if __name__ == "__main__":
     main(input("Введите ссылку на категорию: "))

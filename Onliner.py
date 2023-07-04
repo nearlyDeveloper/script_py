@@ -1,8 +1,6 @@
 # -*- coding: utf8 -*-
 import datetime
-import math
 from random import randrange
-from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -105,9 +103,9 @@ def main(url_of_group):
                     else:
                         dr = json_data['positions']['primary'][k]['position_price']['amount']
                         hj = s[k]
-                        data_type = type(dr)
-                        print(dr)
-                        print(data_type)
+                        # data_type = type(dr)
+                        # print(dr)
+                        # print(data_type)
                         # print(hj)
                         w = 1
                         if len(s) < 2:

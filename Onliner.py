@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 import datetime
+import time
 from random import randrange
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -37,7 +38,7 @@ def main(url_of_group):
     driver = webdriver.Chrome(executable_path=chrome_driver_path)
 
     with driver as driver:
-        for i in range(1, 2):
+        for i in range(2, 4):
             req = requests.get(url=f"https://catalog.onliner.by/sdapi/catalog.api/search/{ber}?group=1&page={i}")
             jso = json.loads(req.text)
             for j in range(0, 30):
@@ -55,7 +56,8 @@ def main(url_of_group):
                     # Используйте метод execute_script для выполнения JavaScript кода и клика по кнопке
                     driver.execute_script("arguments[0].click();", button)
                 except TimeoutException:
-                    pass 
+                    pass
+                time.sleep(1.7) 
                 a = driver.find_elements(By.CLASS_NAME,"offers-list__description_nowrap")
                 price_element = driver.find_element(By.CLASS_NAME, "offers-description__price")
                 if driver.find_elements(By.CLASS_NAME, "offers-description__price_secondary"):
@@ -79,14 +81,26 @@ def main(url_of_group):
                             if "https://5410.shop.onliner.by/" in delivery_price_link.get_attribute("href"):
                                 if "под заказ" in delivery_price_offers.text:
                                         price_element = delivery_price_offers.find_element(By.CLASS_NAME, "offers-list__description")
-                                        price_value = price_element.text.strip()
-                                        saved_price = price_value
+                                        if "Onlíner Pay" in price_element.text:
+                                            price_element = delivery_price_offers.find_element(By.CLASS_NAME, "offers-list__description_alter-other")
+                                            price_value = price_element.text.strip()
+                                            saved_price = price_value
+                                        else:
+                                            price_value = price_element.text.strip()
+                                            saved_price = price_value
+                                else:
+                                        price_element = delivery_price_offers.find_element(By.CLASS_NAME, "offers-list__description")
+                                        if "Onlíner Pay" in price_element.text:
+                                            price_element = delivery_price_offers.find_element(By.CLASS_NAME, "offers-list__description_alter-other")
+                                            price_value = price_element.text.strip()
+                                            saved_price = price_value
                         except ValueError:
                                 pass
                         if saved_price is not None:
-                            print(saved_price)
-                        else: 
-                            saved_price = 'Нашего предложения нет'
+                            saved_delivery = "Под заказ"
+                        else:
+                            saved_price = "Нашего предложения нет"
+                            saved_delivery = " "
                 # print(length) 
                 for o in a:
                     # print(o.text)
@@ -114,29 +128,40 @@ def main(url_of_group):
                             del s[k]
                 # print(s)
                 if w == 1:
-                    na = "Есть в магазине KingStyle"
+                    na = "Есть в KingStyle"
                 else:
-                    na = "Нет в магазине KingStyle"
+                    na = "Нет в KingStyle"
                 # print(quantity)
-                # print(s)
                 if len(s) > 0:
                     if len(s) == 1:
-                        item = {
-                            'name': name,
-                            'price': min_price,
-                            'delivery': "Доставка " + ' '.join(s) + " д.",
-                            'price_King': dr,
-                            'delivery_King': "Доставка " + hj + " д.",
-                            'name_shop': ', '.join(name_shop),
-                            'url': from_selenium + "/prices",
-                            'nal': na
-                        }
+                        if saved_price == "Нашего предложения нет":
+                            item = {
+                                    'name': name,
+                                    'price': min_price,
+                                    'delivery': "Доставка " + ', '.join(s) + " д. 1",
+                                    'price_King': saved_price,
+                                    'delivery_King': " ",
+                                    'name_shop': ', '.join(name_shop),
+                                    'url': from_selenium + "/prices",
+                                    'nal': "Нет в KingStyle"
+                                }
+                        else:
+                            item = {
+                                'name': name,
+                                'price': min_price,
+                                'delivery': "Доставка " + ', '.join(s) + " д. 2",
+                                'price_King': saved_price,
+                                'delivery_King': "Доставка " + hj + " д.",
+                                'name_shop': ', '.join(name_shop),
+                                'url': from_selenium + "/prices",
+                                'nal': "Есть в KingStyle"
+                            }
                     else:
                         if w == 1:
                             item = {
                                 'name': name,
                                 'price': min_price,
-                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д.",
+                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д. 3",
                                 'price_King': dr,
                                 'delivery_King': "Доставка " + hj + " д.",
                                 'name_shop': ', '.join(name_shop),
@@ -147,9 +172,9 @@ def main(url_of_group):
                             item = {
                                 'name': name,
                                 'price': min_price,
-                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д.",
-                                'price_King': " ",
-                                'delivery_King': "Доставка ",
+                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д. 4 ",
+                                'price_King': "Нашего предложения нет ",
+                                'delivery_King': " ",
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na
@@ -173,18 +198,30 @@ def main(url_of_group):
                                 'price': ''.join(prices),
                                 'delivery': "Пока нет доставки по адресу и в пункты выдачи",
                                 'price_King': dr,
-                                'delivery_King': hj,
+                                'delivery_King': hj + " " ,
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na
                             }
                     else:
+                        if w == 1:
                             item = {
                                 'name': name,
                                 'price': min_price,
-                                'delivery': " ",
+                                'delivery': " 4 ",
                                 'price_King': saved_price,
-                                'delivery_King': "Под заказ " + hj,
+                                'delivery_King': "Доставка " + hj + " д.",
+                                'name_shop': ', '.join(name_shop),
+                                'url': from_selenium + "/prices",
+                                'nal': na
+                            }
+                        else:
+                             item = {
+                                'name': name,
+                                'price': min_price,
+                                'delivery': " 5 ",
+                                'price_King': saved_price,
+                                'delivery_King': saved_delivery + " ",
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na

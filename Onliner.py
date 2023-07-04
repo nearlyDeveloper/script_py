@@ -27,14 +27,15 @@ def main(url_of_group):
         "https://catalog.onliner.by/interior_chair": ("interior_chair", "Кресла"),
         "https://catalog.onliner.by/kitchen_table": ("kitchen_table", "Кухонные столы и обеденные группы")
     }
-
     ber, rt = url_mappings.get(url_of_group, (None, None))
+
     w = 0
     dr = ""
     hj = ""
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
     chrome_driver_path = "C:/Users/Bartosh/Desktop/Main files/script_py/chromedriver.exe"
+    # chrome_driver_path = "D:/epsxe/script_py/chromedriver.exe"
     driver = webdriver.Chrome(executable_path=chrome_driver_path)
 
     with driver as driver:
@@ -57,7 +58,7 @@ def main(url_of_group):
                     driver.execute_script("arguments[0].click();", button)
                 except TimeoutException:
                     pass
-                time.sleep(1.7) 
+                # time.sleep(1.7) 
                 a = driver.find_elements(By.CLASS_NAME,"offers-list__description_nowrap")
                 price_element = driver.find_element(By.CLASS_NAME, "offers-description__price")
                 if driver.find_elements(By.CLASS_NAME, "offers-description__price_secondary"):
@@ -101,9 +102,7 @@ def main(url_of_group):
                         else:
                             saved_price = "Нашего предложения нет"
                             saved_delivery = " "
-                # print(length) 
                 for o in a:
-                    # print(o.text)
                     if len(o.text.split()) == 4 and o.text.split()[0] == '—':
                         del o.text.split()[0]
                         del o.text.split()[1]
@@ -116,11 +115,7 @@ def main(url_of_group):
                             json_data["shops"][str(json_data["positions"]["primary"][k]["shop_id"])]["title"])
                     else:
                         dr = json_data['positions']['primary'][k]['position_price']['amount']
-                        hj = s[k]
-                        # data_type = type(dr)
-                        # print(dr)
-                        # print(data_type)
-                        # print(hj)
+                        hj = s[k]    
                         w = 1
                         if len(s) < 2:
                             s = []
@@ -131,7 +126,6 @@ def main(url_of_group):
                     na = "Есть в KingStyle"
                 else:
                     na = "Нет в KingStyle"
-                # print(quantity)
                 if len(s) > 0:
                     if len(s) == 1:
                         if saved_price == "Нашего предложения нет":
@@ -233,23 +227,17 @@ def main(url_of_group):
                 name_shop = []
                 dr = ''
                 hj = ''
+                # создание файла с названием rt 
                 with xlsxwriter.Workbook(f"{rt}.xlsx") as workbook:
                     ws = workbook.add_worksheet()
                     bold = workbook.add_format({'bold': True})
-                    headers = ['Название товара', 'Минимальная цена', "Мин. сроки доставки среди тех, у кого минимальная цена", "Цена KingStyle", "Сроки доставки KingStyle",
-                               "Магазины с мин. сроком доставки", "Наличие", "Ссылка"]
-                    for col, h in enumerate(headers):
-                        ws.write_string(0, col, h, cell_format=bold)
+                    # создание заголовков столбцов, для ввода данных в таблицу
+                    headers = ['Название товара', 'Мин. цена', "Мин.доставка конкурентов", "Цена KingStyle", "Доставка KingStyle",
+                                "Магазины мин.доставки", "Наличие", "Ссылка"]
+                    ws.write_row(0, 0, headers, cell_format=bold)
+                    # запись данных в столбцы, согласно логическим именам из headers
                     for row, item in enumerate(data, start=1):
-                        ws.write_string(row, 0, item["name"])
-                        ws.write_string(row, 1, item["price"])
-                        ws.write_string(row, 2, item['delivery'])
-                        ws.write_string(row, 3, item["price_King"])
-                        ws.write_string(row, 4, item["delivery_King"])
-                        ws.write_string(row, 5, item['name_shop'])
-                        ws.write_string(row, 6, item["nal"])
-                        ws.write_string(row, 7, item['url'])
-
+                        ws.write_row(row, 0, [item["name"], item["price"], item['delivery'], item["price_King"], item["delivery_King"], item['name_shop'], item["nal"], item['url']])
             print(f"Обработана {i}/{3}")
         print(datetime.datetime.now() - tg)
 

@@ -10,8 +10,7 @@ from rich.progress import Progress
 from pprint import pprint
 
 
-
-PATH = r"C:/Users/Bartosh/Desktop/Main files/29.06/positions.csv"
+PATH = r"C:/Users/Bartosh/Desktop/Main files/script_py/positions.csv"
 URL = 'https://b2bapi.onliner.by'
 URL_C = 'https://catalog.onliner.by'
 CLIENT_ID = 'b0e96d5f8cd989c3bee0'
@@ -22,11 +21,9 @@ CLIENT_SEKRET = 'ff3267b8fecf5e268650408df663c46c34889ad1'
 TIME = 1.5    #  timeout между каждой стопкой асинхронных запросов
 STEP = 8      #  по скольку записей берём в стопку
 
-
 losts = 0    # сколько утеряно данных
 not_find = 0
 headers = {"Accept":"application/json"}
-
 
 # запись изменённых строк
 def write(path, name, L):
@@ -35,8 +32,6 @@ def write(path, name, L):
         file.writelines(['\t'+ str(i) +'\n' for i in L])
         file.write('\n\n')
 
-
-
 class Table:
 
     def __init__(self, path, sep=';'):
@@ -44,17 +39,14 @@ class Table:
         self.path = path
         self.sep = sep
 
-
     def _get_index_makers(self, title):
         makers = self.data['Производитель'].str.findall(title, flags=re.IGNORECASE)
         apply = makers.apply(lambda x: x != [])
         return apply.loc[apply == True].index
 
-
     def get_by_makers(self, title) -> pd.DataFrame:
         index_makers = self._get_index_makers(title)
         return self.data.iloc[index_makers]
-
 
     def get_by_makers_generator(self, title, lens) -> dict:
         """Получаем генератор строк по выбранному производителю"""
@@ -84,14 +76,12 @@ class Table:
                 break
             count += step
 
-
     def insert(self, i, price='', delivery=''):
         """Изменяем (Цену и доставку) строку i в таблице"""
         if price:
             self.data.loc[i, ['Цена']] = price
         if delivery:
             self.data.loc[i, ['Срок доставки по Минску', 'Срок доставки по РБ']] = delivery, delivery + 2
-
 
     def upload(self):
         try:
@@ -101,9 +91,6 @@ class Table:
         except PermissionError:
             print("Файл .csv открыт где-то ещё. Нужно закрыть!")
             exit()
-
-
-
 
 class Catalog_onliner():
 
@@ -119,7 +106,6 @@ class Catalog_onliner():
 
         shop = products['shop']
 
-
         try:
             for info_shop in catalogs['shops'].values():
                 compare = fuzz.ratio(info_shop['title'].lower(), shop.lower())
@@ -128,13 +114,11 @@ class Catalog_onliner():
                         if shops['shop_id'] == info_shop['id']:
                             catalog = shops
                             break
-                
 
                     price = catalog['position_price']['amount'].replace('.', ',')
                     delivery = catalog['delivery'].get('pickup_point')
 
                     changes = False  # изменено ли
-
 
                     if price != products['Цена']:
                         changes = True
@@ -154,8 +138,6 @@ class Catalog_onliner():
             # with open(f'{os.path.dirname(PATH)}/error.json', 'w', encoding='utf-8') as file:
             #     json.dump(catalogs,file, indent=4)
             return {}
-
-
 
     def _get_similar(self, results, products):
         """Возвращает самый похожий продукт"""
@@ -178,8 +160,6 @@ class Catalog_onliner():
                 L.append({'catalog': result['products'][index], 'table': product})
         return L
 
-
-
     async def request(self, url, session, params = {}):
         global losts
         try:
@@ -193,15 +173,12 @@ class Catalog_onliner():
                 aiohttp.client_exceptions.ServerTimeoutError, asyncio.TimeoutError):
             losts += 1
             return {}
-    
-
 
     async def _search_products(self, products: list):
         global not_find
         time.sleep(TIME)
 
         # получаем товары
-
         # сначала ищем товары со скобками если таковые есть
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(15)) as session:
             tasks = []
@@ -214,13 +191,11 @@ class Catalog_onliner():
 
             results = await asyncio.gather(*tasks)
 
-
         # находим все товары у которых ничего не нашлось по скобкам
         index_after_replace = []
         for i, result in enumerate(results):
             if bool(result.get('total')) is False:
                 index_after_replace.append(i)
-
 
         # если со скобками ничего не нашлось
         if index_after_replace:
@@ -245,7 +220,6 @@ class Catalog_onliner():
             for i, result in zip(index_after_replace, new_results):
                 results[i] = result
 
-
         # находим самые похожие
         catalogs = self._get_similar(results, products)
 
@@ -266,7 +240,6 @@ class Catalog_onliner():
             catalogs = [{'catalog':catalog, 'table': table['table']}  
                         for catalog, table in zip(await asyncio.gather(*tasks), catalogs)]
 
-
         results = []
         for catalog in catalogs:
             if catalog['catalog']:
@@ -274,29 +247,20 @@ class Catalog_onliner():
                 if result:
                     results.append(result)
 
-
         return results
-
 
     def search_products(self, products: list):
         """Получаем изменения продуктов"""
         return self.loop.run_until_complete(self._search_products(products))
 
-
-
-
-
 def main():
     global losts, not_find
-
 
     catalog = Catalog_onliner()
     table = Table(PATH)
 
-
     # это проверка, открыть ли файл в другой программе
     table.upload()
-
 
     makers = input('Введите бренды и магазины:\n   ')
     makers = makers.split(',')
@@ -306,14 +270,12 @@ def main():
     with open(os.path.dirname(PATH) + '/strings.txt', 'w', encoding='utf-8') as file:
         file.write('')
 
-
     for maker_and_shop in makers_and_shops:
         print('\n\n')
 
         maker, shop = maker_and_shop.split(':')
         maker = maker.strip()
         shop = shop.strip()
-
         # сколько всего записей
         count = len(table.get_by_makers(maker))
         print(f'Записей найдено: {count}')
@@ -326,43 +288,30 @@ def main():
         with Progress() as prog:
             # добавляем прогресс загрузки
             progress = prog.add_task(f"[cyan]Загрузка: {maker} | {shop}", total=count)
-
             # получаем данные из таблицы
             for row in table.get_by_makers_generator(maker, STEP):
                 # добавляем в запись магазин
                 row = [{**i, 'shop': shop} for i in row]
-
                 # получаем изменения
                 change = catalog.search_products(row)
-
                 if change:
                     # добавляем их номер строки каждого изменённого
                     strings.extend([i['id'] + 2 for i in change])
-
                     # изменяем таблицу
                     for ch in change:
                         table.insert(ch['id'], ch['Цена'], ch['Срок доставки по Минску'])
-
                 # обновляем прогресс
                 prog.update(progress, advance=STEP)
-
             # записываем все изменённые строки
             write(os.path.dirname(PATH), maker + ' | ' + shop, strings)
-
             # выгружаем таблицу
             table.upload()
-
-
         print(f'\nИнформация обработки {maker} | {shop}:')
         print(f'\tИзменено: {len(strings)}/{count}')
         print(f"\tУтеряно данных: {losts}")
         print(f'\tНе найдено из-за названий: {not_find}')
-
         losts = 0
-
     print(f'\n[+] Все данные успешно сохранены!')
-
-
 
 if __name__ == "__main__":
     if not os.path.exists(PATH):
@@ -374,12 +323,6 @@ if __name__ == "__main__":
 
     main()
 
-
-
-
-
-
-
     # pprint(catalog.search_products([                    
     #                 {'id':55, 
     #                  'Производитель':'Nika',
@@ -389,37 +332,19 @@ if __name__ == "__main__":
     #                  'Цена': '0',
     #                  'shop': 'kingstyle'
     #                     }]))
-
-
-
-
-
-
-
-
-
-
-
-
-
 class Catalog_api():
     headers = {"Accept":"application/json"}
-
     def __init__(self):
         self.token = self._get_token()
         self.params = {'access_token': self.token}
-
-
     def _get_token(self):
         r = requests.post('https://b2bapi.onliner.by/oauth/token', 
                             auth=(CLIENT_ID,CLIENT_SEKRET), 
                             headers=self.headers, 
                             data={'grant_type':"client_credentials"})
-
         assert r.ok, "не получен токен"
         return r.json()['access_token']
-
-
+    
     def _get_id_category(self, title):
         r = requests.get(f'{URL}/sections', 
                             headers=self.headers, 
@@ -427,8 +352,7 @@ class Catalog_api():
         if len(r.json()) > 1:
             print('many')
         return list(r.json().keys())[0]
-
-
+    
     def _get_id_manufacture(self, category_id, title):
         r = requests.get(f'{URL}/sections/{category_id}/manufacturers', 
                             headers=self.headers, 
@@ -436,7 +360,6 @@ class Catalog_api():
         if len(r.json()) > 1:
             print('many')
         return list(r.json().keys())[0]
-
 
     def _get_id_product(self, category_id, manufacture_id, title):
         r = requests.get(f'{URL}/sections/{category_id}/manufacturers/{manufacture_id}/products', 
@@ -446,13 +369,11 @@ class Catalog_api():
             print('many')
         return list(r.json().keys())[0]
 
-
     def _get_positions(self, category_id, manufacture_id, product_id):
         r = requests.get(f'{URL}/sections/{category_id}/manufacturers/{manufacture_id}/products/{product_id}/positions', 
                             headers=self.headers, 
                             params=self.params)
         return r.json()
-
 
     def get_product(self, category, manufacture, product):
         category_id = self._get_id_category(category)
@@ -461,7 +382,6 @@ class Catalog_api():
         result = self._get_positions(category_id, manufacture_id, product_id)
         return result
 
-
     def get_positions(self) -> dict:
         r = requests.get(f'{URL}/positions', 
                                 headers=self.headers, 
@@ -469,18 +389,13 @@ class Catalog_api():
         result = {}
         for product in r.json():
             result[product['id']] = product
-
-        return result    
-        
+        return result         
     """
     makers = input('Введите бренд (или бренды через ","): ')
     makers = makers.split(',')
-
     table = Table(PATH)
     catalog = Catalog()
     products = catalog.get_positions()
-
-
     for maker in makers:
         maker = maker.strip()
         print(f'\n\nОбрабатывается {maker}')
@@ -521,7 +436,7 @@ class Catalog_api():
         print(f"\n[+] Всего найдено записей с брендом {maker} - {changes[3]}")
 
         print(f"\n[+] Изменено:")
-        print(f"\tЦен - {changes[0]}")
+        print(f"\tЦен - {changSes[0]}")
         print(f"\tДоставке по Минску - {changes[1]}")
         print(f"\tДоставке по РБ - {changes[2]}")
 

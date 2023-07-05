@@ -39,7 +39,7 @@ def main(url_of_group):
     driver = webdriver.Chrome(executable_path=chrome_driver_path)
 
     with driver as driver:
-        for i in range(2, 4):
+        for i in range(1, 2):
             req = requests.get(url=f"https://catalog.onliner.by/sdapi/catalog.api/search/{ber}?group=1&page={i}")
             jso = json.loads(req.text)
             for j in range(0, 30):

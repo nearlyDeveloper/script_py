@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 import datetime
 import time
+import re
 from random import randrange
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -102,6 +103,7 @@ def main(url_of_group):
                         else:
                             saved_price = "Нашего предложения нет"
                             saved_delivery = " "
+                time = None 
                 for o in a:
                     if len(o.text.split()) == 4 and o.text.split()[0] == '—':
                         del o.text.split()[0]
@@ -114,14 +116,14 @@ def main(url_of_group):
                         name_shop.append(
                             json_data["shops"][str(json_data["positions"]["primary"][k]["shop_id"])]["title"])
                     else:
-                        dr = json_data['positions']['primary'][k]['position_price']['amount']
-                        hj = s[k]    
+                        dr = json_data['positions']['primary'][k]['position_price']['amount']                       
+                        hj = s[k]
                         w = 1
                         if len(s) < 2:
                             s = []
                         else:
                             del s[k]
-                # print(s)
+                # print(json_data)
                 if w == 1:
                     na = "Есть в KingStyle"
                 else:
@@ -132,7 +134,7 @@ def main(url_of_group):
                             item = {
                                     'name': name,
                                     'price': min_price,
-                                    'delivery': "Доставка " + ', '.join(s) + " д. 1",
+                                    'delivery': "Доставка " + ', '.join(s) + " д.",
                                     'price_King': saved_price,
                                     'delivery_King': " ",
                                     'name_shop': ', '.join(name_shop),
@@ -143,9 +145,9 @@ def main(url_of_group):
                             item = {
                                 'name': name,
                                 'price': min_price,
-                                'delivery': "Доставка " + ', '.join(s) + " д. 2",
+                                'delivery': "Доставка " + ', '.join(s) + " д.",
                                 'price_King': saved_price,
-                                'delivery_King': "Доставка " + hj + " д.",
+                                'delivery_King': 'Доставка ' + str(s[prices.index(min(prices))]) + ' д.',
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': "Есть в KingStyle"
@@ -175,28 +177,7 @@ def main(url_of_group):
                             }
                 else:
                     if len(s)>0:
-                        if w == 1:
-                            item = {
-                                'name': name,
-                                'price': min_price,
-                                'delivery': "Пока нет доставки по адресу и в пункты выдачи",
-                                'price_King': dr,
-                                'delivery_King': "Доставка " + hj + " д.",
-                                'name_shop': ', '.join(name_shop),
-                                'url': from_selenium + "/prices",
-                                'nal': na
-                            }
-                        else:
-                            item = {
-                                'name': name,
-                                'price': ''.join(prices),
-                                'delivery': "Пока нет доставки по адресу и в пункты выдачи",
-                                'price_King': dr,
-                                'delivery_King': hj + " " ,
-                                'name_shop': ', '.join(name_shop),
-                                'url': from_selenium + "/prices",
-                                'nal': na
-                            }
+                        print('Непонятная штука')
                     else:
                         if w == 1:
                             item = {
@@ -204,7 +185,7 @@ def main(url_of_group):
                                 'price': min_price,
                                 'delivery': " 4 ",
                                 'price_King': saved_price,
-                                'delivery_King': "Доставка " + hj + " д.",
+                                'delivery_King': saved_delivery + " d",
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na

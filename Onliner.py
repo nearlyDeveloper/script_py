@@ -8,6 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.service import Service
 import json
 import xlsxwriter
 import requests
@@ -37,10 +38,11 @@ def main(url_of_group):
     options.add_argument("--headless")
     chrome_driver_path = "C:/Users/Bartosh/Desktop/Main files/script_py/chromedriver.exe"
     # chrome_driver_path = "D:/epsxe/script_py/chromedriver.exe"
-    driver = webdriver.Chrome(executable_path=chrome_driver_path)
+    service = Service(chrome_driver_path)
+    driver = webdriver.Chrome(service=service)
 
     with driver as driver:
-        for i in range(1, 2):
+        for i in range(1, 4):
             req = requests.get(url=f"https://catalog.onliner.by/sdapi/catalog.api/search/{ber}?group=1&page={i}")
             jso = json.loads(req.text)
             for j in range(0, 30):
@@ -103,7 +105,6 @@ def main(url_of_group):
                         else:
                             saved_price = "Нашего предложения нет"
                             saved_delivery = " "
-                time = None 
                 for o in a:
                     if len(o.text.split()) == 4 and o.text.split()[0] == '—':
                         del o.text.split()[0]
@@ -147,7 +148,7 @@ def main(url_of_group):
                                 'price': min_price,
                                 'delivery': "Доставка " + ', '.join(s) + " д.",
                                 'price_King': saved_price,
-                                'delivery_King': 'Доставка ' + str(s[prices.index(min(prices))]) + ' д.',
+                                'delivery_King': 'Доставка ' + hj + ' д.',
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': "Есть в KingStyle"
@@ -157,7 +158,7 @@ def main(url_of_group):
                             item = {
                                 'name': name,
                                 'price': min_price,
-                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д. 3",
+                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д.",
                                 'price_King': dr,
                                 'delivery_King': "Доставка " + hj + " д.",
                                 'name_shop': ', '.join(name_shop),
@@ -168,7 +169,7 @@ def main(url_of_group):
                             item = {
                                 'name': name,
                                 'price': min_price,
-                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д. 4 ",
+                                'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д.",
                                 'price_King': "Нашего предложения нет ",
                                 'delivery_King': " ",
                                 'name_shop': ', '.join(name_shop),
@@ -177,15 +178,15 @@ def main(url_of_group):
                             }
                 else:
                     if len(s)>0:
-                        print('Непонятная штука')
+                         print('Не понятно')
                     else:
                         if w == 1:
                             item = {
                                 'name': name,
                                 'price': min_price,
-                                'delivery': " 4 ",
+                                'delivery': " ",
                                 'price_King': saved_price,
-                                'delivery_King': saved_delivery + " d",
+                                'delivery_King': saved_delivery + " ",
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
                                 'nal': na
@@ -194,7 +195,7 @@ def main(url_of_group):
                              item = {
                                 'name': name,
                                 'price': min_price,
-                                'delivery': " 5 ",
+                                'delivery': " ",
                                 'price_King': saved_price,
                                 'delivery_King': saved_delivery + " ",
                                 'name_shop': ', '.join(name_shop),

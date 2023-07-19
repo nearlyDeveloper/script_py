@@ -179,7 +179,7 @@ class Catalog_onliner():
         time.sleep(TIME)
 
         # получаем товары
-        # сначала ищем товары со скобками если таковые есть
+        # сначала ищем товары со скобками если таковые есть 
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(15)) as session:
             tasks = []
             for product in products:

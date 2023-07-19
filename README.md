@@ -1,1 +1,1 @@
-# onliner_parcing
+# Script for parcing offers from onliner 

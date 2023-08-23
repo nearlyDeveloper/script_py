@@ -115,7 +115,7 @@ def main(url_of_group):
                     if not json_data["shops"][str(json_data["positions"]["primary"][k]["shop_id"])]["title"] == "KingStyle":
                         prices.append(json_data['positions']['primary'][k]['position_price']['amount'])
                         name_shop.append(
-                            json_data["shops"][str(json_data["positions"]["primary"][k]["shop_id"])]["title"])
+                            json_data["shops"][str(json_data["positions"]["primary"][k]["shop_id"])]["title"])              
                     else:
                         dr = json_data['positions']['primary'][k]['position_price']['amount']                       
                         hj = s[k]
@@ -170,7 +170,7 @@ def main(url_of_group):
                                 'name': name,
                                 'price': min_price,
                                 'delivery': "Доставка " + str(s[prices.index(min(prices))]) + " д.",
-                                'price_King': "Нашего предложения нет ",
+                                'price_King': "Нашего предложения нет",
                                 'delivery_King': " ",
                                 'name_shop': ', '.join(name_shop),
                                 'url': from_selenium + "/prices",
@@ -209,7 +209,7 @@ def main(url_of_group):
                 name_shop = []
                 dr = ''
                 hj = ''
-                # создание файла с названием rt 
+                
                 with xlsxwriter.Workbook(f"{rt}.xlsx") as workbook:
                     ws = workbook.add_worksheet()
                     bold = workbook.add_format({'bold': True})
